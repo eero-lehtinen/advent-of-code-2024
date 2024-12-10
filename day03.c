@@ -1,4 +1,5 @@
-#include <errno.h>
+#define __STDC_WANT_LIB_EXT1__ 1
+
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
@@ -16,7 +17,9 @@ char* substring(const char* start, const char* end) {
 	char* dest = malloc(length + 1);
 	assert(dest != NULL);
 
-	strncpy(dest, start, length);
+	errno_t res = strncpy_s(dest, length + 1, start, length);
+	assert(res == 0);
+
 	dest[length] = '\0';
 
 	return dest;
@@ -199,18 +202,17 @@ void test() {
 	input = "()";
 	my_assert(10, match("(\\(\\))", &input, matches, matches_count), YES_MATCH);
 	match_assert(matches, (const char*[1]){ "()" }, 1);
-
-
-	// input = "abc";
-	// my_assert(9, match("mul()", &input, matches, matches_count), NO_MATCH);
 }
 
 FILE* open_file(const char *filename) {
 	FILE *file = NULL;
 
-	file = fopen(filename, "r");
-	if (file == NULL) {
-		fprintf(stderr, "Error opening file %s: %s\n", filename, strerror(errno));
+	errno_t res = fopen_s(&file, filename, "r");
+	if (res != 0) {
+        char message[256];
+        errno_t error_res = strerror_s(message, sizeof(message), res);
+		assert(error_res == 0);
+		fprintf(stderr, "Error opening file %s: %s\n", filename, message);
 		assert(false);
 	}
 
@@ -231,7 +233,6 @@ bool parseint(char** in, int* out) {
 	while (true) {
 		if (!found && **in == ' ') {
 			(*in)++;
-			printf("'%s'\n", *in);
 			continue;
 		} 
 		else if (**in >= '0' && (**in) <= '9') {
@@ -305,7 +306,6 @@ int main() {
 				result += n0 * n1;
 			}
 		}
-		printf("\n");
 	}
 
 
