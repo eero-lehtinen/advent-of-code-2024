@@ -342,33 +342,51 @@ int main() {
     for (int i = 0; i < page_lists_count; i++) {
         struct Array *list = &page_lists[i];
         bool correct = true;
-        for (int j = 0; j < rules_count; j++) {
-            int a_pos = -1;
-            int b_pos = -1;
+        int j = 0;
+        do {
+            correct = true;
+            for (int j = 0; j < rules_count; j++) {
+                int a_pos = -1;
+                int b_pos = -1;
 
-            for (int k = 0; k < list->size; k++) {
-                int cur = list->data[k];
+                for (int k = 0; k < list->size; k++) {
+                    int cur = list->data[k];
 
-                if (cur == rules[j].a) {
-                    a_pos = k;
+                    if (cur == rules[j].a) {
+                        a_pos = k;
+                    }
+
+                    if (cur == rules[j].b) {
+                        b_pos = k;
+                    }
                 }
-
-                if (cur == rules[j].b) {
-                    b_pos = k;
+                if (a_pos != -1 && b_pos != -1 && a_pos >= b_pos) {
+                    int tmp = list->data[a_pos];
+                    list->data[a_pos] = list->data[b_pos];
+                    list->data[b_pos] = tmp;
+                    correct = false;
+                    break;
                 }
             }
-            if (a_pos != -1 && b_pos != -1 && a_pos >= b_pos) {
-                correct = false;
-                break;
-            }
-        }
+            j++;
+        } while (!correct);
 
-        if (correct) {
+        if (j > 1) {
             int middle = list->data[list->size / 2];
             result += middle;
         }
 
         array_free(list);
+    }
+
+    printf("Sorted:\n");
+    for (int i = 0; i < page_lists_count; i++) {
+        struct Array *list = &page_lists[i];
+        printf("%d: ", i);
+        for (int j = 0; j < list->size; j++) {
+            printf("%d, ", list->data[j]);
+        }
+        printf("\n");
     }
 
     printf("%d", result);
