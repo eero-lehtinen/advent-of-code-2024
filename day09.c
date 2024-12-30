@@ -57,10 +57,10 @@ int main() {
     struct Array filesystem;
     array_new(&filesystem, 8);
 
+    int id = 0;
     while (fgets(line, sizeof(line), file) != NULL) {
         char *cursor = line;
         bool file = true;
-        int id = 0;
         while (*cursor != '\n' && *cursor != '\0') {
             int num = *cursor - '0';
             if (file) {
@@ -79,29 +79,55 @@ int main() {
     }
 
     // for (int i = 0; i < filesystem.size; i++) {
-    //     printf("%lld ", filesystem.data[i]);
+    //     if (filesystem.data[i] == -1) {
+    //         printf(".");
+    //     } else {
+    //         printf("%lld", filesystem.data[i]);
+    //     }
     // }
     // printf("\n");
 
-    int il = 0;
     int ir = filesystem.size - 1;
-    while (true) {
-        while (filesystem.data[il] != -1) {
-            il++;
-        }
-        while (filesystem.data[ir] == -1) {
+    while (--id >= 0) {
+        int size = 0;
+        while (ir >= 0 && filesystem.data[ir] != id) {
             ir--;
         }
-        if (il >= ir) {
-            break;
+        while (ir >= 0 && filesystem.data[ir] == id) {
+            ir--;
+            size++;
         }
-        int64_t tmp = filesystem.data[il];
-        filesystem.data[il] = filesystem.data[ir];
-        filesystem.data[ir] = tmp;
+
+        int il = 0;
+        int space = 0;
+        while (il <= ir) {
+            if (filesystem.data[il] == -1) {
+                space++;
+                if (space == size) {
+                    break;
+                }
+            } else {
+                space = 0;
+            }
+            il++;
+        }
+        if (space == size) {
+            for (int i = 0; i < size; i++) {
+                int il2 = il - size + i + 1;
+                int ir2 = ir + i + 1;
+                int tmp = filesystem.data[il2];
+                filesystem.data[il2] = filesystem.data[ir2];
+                filesystem.data[ir2] = tmp;
+            }
+        }
     }
 
     // for (int i = 0; i < filesystem.size; i++) {
-    //     printf("%lld ", filesystem.data[i]);
+    //     if (filesystem.data[i] == -1) {
+    //         printf(".");
+    //     } else {
+    //         printf("%lld", filesystem.data[i]);
+    //     }
     // }
     // printf("\n");
 
@@ -109,13 +135,12 @@ int main() {
 
     for (uint64_t i = 0; i < filesystem.size; i++) {
         uint64_t data = filesystem.data[i];
-        if (data == -1) {
-            break;
+        if (data != -1) {
+            checksum += data * i;
         }
-        checksum += data * i;
     }
 
-    printf("Result %llu\n", checksum);
+    printf("Result: %llu\n", checksum);
 
     fclose(file);
 }
