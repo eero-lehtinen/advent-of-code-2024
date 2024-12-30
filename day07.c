@@ -284,8 +284,18 @@ void array_free(struct Array *arr) { free(arr->data); }
 enum Op {
     OP_SUM,
     OP_MUL,
+    OP_CONCAT,
     OP_COUNT,
 };
+
+int count_digits(int64_t value) {
+    int count = 0;
+    while (value > 0) {
+        value /= 10;
+        count++;
+    }
+    return count;
+}
 
 int64_t operate(int64_t a, int64_t b, enum Op op) {
     switch (op) {
@@ -293,6 +303,8 @@ int64_t operate(int64_t a, int64_t b, enum Op op) {
         return a + b;
     case OP_MUL:
         return a * b;
+    case OP_CONCAT:
+        return (int64_t)pow(10, count_digits(b)) * a + b;
     default:
         assert(false);
     }
