@@ -126,15 +126,25 @@ static int find_antinodes(void *const context, void *const value) {
             // printf("b: %d, %d\n", b.x, b.y);
             // printf("offset: %d, %d\n", offset.x, offset.y);
 
-            struct Pos *antinode_pos = malloc(sizeof(struct Pos));
-            antinode_pos->x = a.x - offset.x;
-            antinode_pos->y = a.y - offset.y;
-
-            if (in_bounds(ctx->width, ctx->height, *antinode_pos)) {
-                bool *tru = malloc(sizeof(bool));
-                *tru = true;
-                assert(hashmap_put(ctx->antinodes, antinode_pos,
-                                   sizeof(struct Pos), tru) == 0);
+            int o = 0;
+            int d = -1;
+            while (true) {
+                struct Pos *antinode_pos = malloc(sizeof(struct Pos));
+                antinode_pos->x = a.x + o * offset.x;
+                antinode_pos->y = a.y + o * offset.y;
+                if (in_bounds(ctx->width, ctx->height, *antinode_pos)) {
+                    bool *tru = malloc(sizeof(bool));
+                    *tru = true;
+                    assert(hashmap_put(ctx->antinodes, antinode_pos,
+                                       sizeof(struct Pos), tru) == 0);
+                    o += d;
+                } else {
+                    if (d == 1) {
+                        break;
+                    }
+                    d = 1;
+                    o = 0;
+                }
             }
         }
     }
