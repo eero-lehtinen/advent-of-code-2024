@@ -1,6 +1,5 @@
 #define __STDC_WANT_LIB_EXT1__ 1
 
-#include "hashmap.h"
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
@@ -138,8 +137,6 @@ int main() {
         struct PosArray stack;
         pos_array_new(&stack, 8);
         pos_array_push(&stack, start);
-        struct hashmap_s visited;
-        assert(hashmap_create(8, &visited) == 0);
         int cur_trails = 0;
 
         while (stack.size > 0) {
@@ -157,14 +154,6 @@ int main() {
                     continue;
                 }
 
-                if (hashmap_get(&visited, &next, sizeof(struct Pos)) != NULL) {
-                    continue;
-                }
-                struct Pos *next_ptr = malloc(sizeof(struct Pos));
-                *next_ptr = next;
-                assert(hashmap_put(&visited, next_ptr, sizeof(struct Pos),
-                                   next_ptr) == 0);
-
                 if (next_val == 9) {
                     cur_trails++;
                     continue;
@@ -177,7 +166,6 @@ int main() {
         trails += cur_trails;
         // printf("Trail: %d\n", cur_trails);
 
-        hashmap_destroy(&visited);
         pos_array_free(&stack);
     }
 
