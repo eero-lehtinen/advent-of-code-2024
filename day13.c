@@ -223,7 +223,7 @@ void test() {
     match_assert(matches, (const char *[1]){"123"}, 1);
 }
 
-bool parseint(char **in, int *out) {
+bool parseint(char **in, int64_t *out) {
     bool found = false;
     *out = 0;
     while (true) {
@@ -258,8 +258,8 @@ FILE *open_file(const char *filename) {
 }
 
 struct Pos {
-    int x;
-    int y;
+    int64_t x;
+    int64_t y;
 };
 
 struct PosArray {
@@ -300,12 +300,12 @@ int main() {
     struct Match matches[2];
     const int match_count = sizeof(matches) / sizeof(matches[0]);
 
-    int total = 0;
+    int64_t total = 0;
 
     int l = 0;
     struct Pos a;
     struct Pos b;
-    struct Pos price;
+    struct Pos c;
     while (fgets(line, sizeof(line), file) != NULL) {
         char *cursor = line;
         int ll = l % 4;
@@ -319,32 +319,26 @@ int main() {
             assert(parseint(&matches[1].value, &p->y));
         } else if (ll == 2) {
             assert(match("Prize: X=(\\d+), Y=(\\d+)", &cursor, matches, match_count) == YES_MATCH);
-            assert(parseint(&matches[0].value, &price.x));
-            assert(parseint(&matches[1].value, &price.y));
-        } else {
-            // printf("a: %d, %d, b: %d, %d, price: %d, %d\n", a.x, a.y, b.x, b.y, price.x,
-            // price.y);
-            int min_a = INT_MAX;
-            int min_b = INT_MAX;
-            for (int i = 0; i < 100; i++) {
-                for (int j = 0; j < 100; j++) {
-                    struct Pos sum = {i * a.x + j * b.x, i * a.y + j * b.y};
-                    if (sum.x == price.x && sum.y == price.y) {
-                        min_a = min(min_a, i * 3);
-                        min_b = min(min_b, j);
-                    }
-                }
-            }
+            assert(parseint(&matches[0].value, &c.x));
+            assert(parseint(&matches[1].value, &c.y));
+            c.x += 10000000000000;
+            c.y += 10000000000000;
 
-            if (min_a < INT_MAX && min_b < INT_MAX) {
-                // printf("min_a: %d, min_b: %d\n", min_a, min_b);
-                total += min_a + min_b;
+            // printf("a: %lld, %lld, b: %lld, %lld, price: %lld, %lld\n", a.x, a.y, b.x, b.y, c.x,
+            //        c.y);
+            int64_t count_b = (c.x * a.y - c.y * a.x) / (b.x * a.y - b.y * a.x);
+            int64_t count_a = (c.y - count_b * b.y) / a.y;
+            struct Pos sum = {count_a * a.x + count_b * b.x, count_a * a.y + count_b * b.y};
+
+            if (sum.x == c.x && sum.y == c.y && count_a > 0 && count_b > 0) {
+                // printf("Found: %lld, %lld\n", count_a, count_b);
+                total += count_a * 3 + count_b;
             }
         }
         l++;
     }
 
-    printf("Result: %d\n", total);
+    printf("Result: %lld\n", total);
 
     fclose(file);
 }
