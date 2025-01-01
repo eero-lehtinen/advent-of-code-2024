@@ -131,6 +131,7 @@ enum MatchResult match_inner(const char *pattern, char *input, struct Match *mat
 
     } else {
         return match_inner(pat + 1, input, matches, matches_count, im, end);
+        // printf("%s", line);
     }
 }
 
@@ -305,7 +306,6 @@ int mod(int a, int b) {
 }
 
 void print_positions(int width, int height, struct PosArray *positions) {
-    printf("\n");
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             int count = 0;
@@ -356,7 +356,7 @@ int main() {
         pos_array_push(&velocities, vel);
     }
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 100000; i++) {
         for (int j = 0; j < positions.size; j++) {
             struct Pos *pos = &positions.data[j];
             struct Pos *vel = &velocities.data[j];
@@ -367,36 +367,25 @@ int main() {
             pos->x = mod(pos->x, width);
             pos->y = mod(pos->y, height);
         }
-    }
 
-    // print_positions(width, height, &positions);
-
-    int quadrants[4] = {0, 0, 0, 0};
-    int hw = width / 2;
-    int hh = height / 2;
-    for (int i = 0; i < positions.size; i++) {
-        int q = -1;
-        struct Pos pos = positions.data[i];
-        if (pos.x < hw && pos.y < hh) {
-            q = 0;
-        } else if (pos.x > hw && pos.y < hh) {
-            q = 1;
-        } else if (pos.x < hw && pos.y > hh) {
-            q = 2;
-        } else if (pos.x > hw && pos.y > hh) {
-            q = 3;
+        int neighbors = 0;
+        for (int k = 0; k < positions.size; k++) {
+            struct Pos pos = positions.data[k];
+            for (int l = 0; l < positions.size; l++) {
+                struct Pos pos2 = positions.data[l];
+                if (abs(pos.x - pos2.x) == 1 && abs(pos.y - pos2.y) == 1) {
+                    neighbors++;
+                    break;
+                }
+            }
         }
-        if (q != -1) {
-            quadrants[q]++;
+
+        printf("%d\n", i + 1);
+        if (neighbors > (int)((float)positions.size / 2.5)) {
+            print_positions(width, height, &positions);
+            system("PAUSE");
         }
     }
-
-    int safety_score = quadrants[0];
-    for (int i = 1; i < sizeof(quadrants) / sizeof(quadrants[0]); i++) {
-        safety_score *= quadrants[i];
-    }
-
-    printf("Result: %d\n", safety_score);
 
     fclose(file);
 }
