@@ -217,10 +217,73 @@ int main() {
                                 pos_array_push(&stack, *np);
                                 region->size += 1;
                             }
-                        } else {
-                            region->perimeter += 1;
                         }
                     }
+                }
+            }
+        }
+    }
+
+    bool perimeter[2] = {false, false};
+    for (int y = 0; y < height; y++) {
+        char prev_name = ' ';
+        for (int x = 0; x < width; x++) {
+            struct Pos *pos = malloc(sizeof(struct Pos));
+            pos->x = x;
+            pos->y = y;
+            struct Region *region = hashmap_get(&visited, pos, sizeof(struct Pos));
+
+            if (region->name != prev_name) {
+                perimeter[0] = false;
+                perimeter[1] = false;
+                prev_name = region->name;
+            }
+
+            for (int i = 0; i < 2; i++) {
+                struct Pos *np = malloc(sizeof(struct Pos));
+                np->x = pos->x + DIRECTIONS[i][0];
+                np->y = pos->y + DIRECTIONS[i][1];
+
+                if (!in_bounds(width, height, np->x, np->y) ||
+                    map.data[np->y * width + np->x] != region->name) {
+                    if (!perimeter[i]) {
+                        region->perimeter++;
+                    }
+                    perimeter[i] = true;
+                } else {
+                    perimeter[i] = false;
+                }
+            }
+        }
+    }
+
+    for (int x = 0; x < width; x++) {
+        char prev_name = ' ';
+        for (int y = 0; y < height; y++) {
+            struct Pos *pos = malloc(sizeof(struct Pos));
+            pos->x = x;
+            pos->y = y;
+            struct Region *region = hashmap_get(&visited, pos, sizeof(struct Pos));
+
+            if (region->name != prev_name) {
+                perimeter[0] = false;
+                perimeter[1] = false;
+                prev_name = region->name;
+            }
+
+            for (int i = 0; i < 2; i++) {
+                struct Pos *np = malloc(sizeof(struct Pos));
+                np->x = pos->x + DIRECTIONS[i + 2][0];
+                np->y = pos->y + DIRECTIONS[i + 2][1];
+
+                if (!in_bounds(width, height, np->x, np->y) ||
+                    map.data[np->y * width + np->x] != region->name) {
+                    if (!perimeter[i]) {
+                        region->perimeter++;
+                    }
+                    perimeter[i] = true;
+                } else {
+                    perimeter[i] = false;
                 }
             }
         }
