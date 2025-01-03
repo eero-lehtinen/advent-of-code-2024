@@ -82,6 +82,13 @@ struct Pos pos_array_pop(struct PosArray *arr) {
     return arr->data[arr->size];
 }
 
+void pos_array_copy(struct PosArray *dst, struct PosArray *src) {
+    dst->size = src->size;
+    dst->capacity = src->capacity;
+    dst->data = malloc(sizeof(struct Pos) * src->capacity);
+    memcpy(dst->data, src->data, sizeof(struct Pos) * src->size);
+}
+
 void pos_array_free(struct PosArray *arr) { free(arr->data); }
 
 int mod(int a, int b) {
@@ -89,14 +96,31 @@ int mod(int a, int b) {
     return r < 0 ? r + b : r;
 }
 
-void print_map(struct Array *map, struct Pos robot, int width, int height) {
+void print_map(struct Array *map, struct PosArray *boxes, struct Pos robot, int width, int height) {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             if (robot.x == x && robot.y == y) {
                 printf("@");
-            } else {
-                printf("%c", map->data[y * width + x]);
+                continue;
             }
+            bool box = false;
+            for (int i = 0; i < boxes->size; i++) {
+                if (boxes->data[i].x == x && boxes->data[i].y == y) {
+                    printf("[");
+                    box = true;
+                    break;
+                }
+                if (boxes->data[i].x == x - 1 && boxes->data[i].y == y) {
+                    printf("]");
+                    box = true;
+                    break;
+                }
+            }
+            if (box) {
+                continue;
+            }
+
+            printf("%c", map->data[y * width + x]);
         }
         printf("\n");
     }
@@ -105,6 +129,33 @@ void print_map(struct Array *map, struct Pos robot, int width, int height) {
 
 struct Pos add_pos(struct Pos a, struct Pos b) { return (struct Pos){a.x + b.x, a.y + b.y}; }
 struct Pos sub_pos(struct Pos a, struct Pos b) { return (struct Pos){a.x - b.x, a.y - b.y}; }
+
+bool move_box(struct PosArray *boxes, int i, struct Pos dir, struct Array *map, int width,
+              int height) {
+    struct Pos cur_pos = boxes->data[i];
+    struct Pos new_pos = add_pos(cur_pos, dir);
+    if (map->data[new_pos.y * width + new_pos.x] == '#' ||
+        map->data[new_pos.y * width + new_pos.x + 1] == '#') {
+        return false;
+    }
+    bool can_move = true;
+    for (int j = 0; j < boxes->size; j++) {
+        if (i == j) {
+            continue;
+        }
+        struct Pos other_box = boxes->data[j];
+        if (abs(new_pos.x - other_box.x) <= 1 && new_pos.y == other_box.y) {
+            if (!move_box(boxes, j, dir, map, width, height)) {
+                can_move = false;
+            }
+        }
+    }
+    if (!can_move) {
+        return false;
+    }
+    boxes->data[i] = new_pos;
+    return true;
+}
 
 const size_t MAX_LINE_LENGTH = 50000;
 
@@ -120,6 +171,9 @@ int main() {
 
     struct Array moves;
     array_new(&moves, 8);
+
+    struct PosArray boxes;
+    pos_array_new(&boxes, 8);
 
     struct Pos robot;
     bool map_part = true;
@@ -137,11 +191,16 @@ int main() {
                     robot.x = w;
                     robot.y = height;
                     array_push(&map, '.');
+                    array_push(&map, '.');
+                } else if (*cursor == 'O') {
+                    pos_array_push(&boxes, (struct Pos){w, height});
+                    array_push(&map, '.');
+                    array_push(&map, '.');
                 } else {
-
+                    array_push(&map, *cursor);
                     array_push(&map, *cursor);
                 }
-                w++;
+                w += 2;
                 cursor++;
             }
             if (height == 0) {
@@ -156,16 +215,18 @@ int main() {
         }
     }
 
-    // print_map(&map, robot, width, height);
+    // print_map(&map, &boxes, robot, width, height);
     //
     // for (int i = 0; i < moves.size; i++) {
     //     printf("%c", moves.data[i]);
     // }
     // printf("\n");
+    //
 
     for (int i = 0; i < moves.size; i++) {
-        // print_map(&map, robot, width, height);
-        //
+        struct PosArray boxes_old;
+        pos_array_copy(&boxes_old, &boxes);
+        // print_map(&map, &boxes, robot, width, height);
         // printf("%c\n", moves.data[i]);
 
         struct Pos dir;
@@ -179,51 +240,38 @@ int main() {
         } else if (move == '<') {
             dir = (struct Pos){-1, 0};
         } else {
-            assert(false);
+            return 1;
         }
 
         struct Pos next_pos = add_pos(robot, dir);
         char next_tile = map.data[next_pos.y * width + next_pos.x];
-        if (next_tile == '.') {
+        if (next_tile == '#') {
+            continue;
+        }
+
+        bool moved = true;
+        for (int j = 0; j < boxes.size; j++) {
+            struct Pos box = boxes.data[j];
+            if ((box.x == next_pos.x || box.x + 1 == next_pos.x) && box.y == next_pos.y) {
+                moved = move_box(&boxes, j, dir, &map, width, height);
+                break;
+            }
+        }
+
+        if (moved) {
             robot = next_pos;
-            continue;
+        } else {
+            pos_array_copy(&boxes, &boxes_old);
         }
-        int movables = 0;
-        while (next_tile == 'O') {
-            movables++;
-            next_pos = add_pos(next_pos, dir);
-            next_tile = map.data[next_pos.y * width + next_pos.x];
-        }
-        if (next_tile != '.') {
-            continue;
-        }
-
-        next_pos = add_pos(robot, dir);
-        robot = next_pos;
-        next_tile = map.data[next_pos.y * width + next_pos.x];
-
-        for (int j = 0; j < movables; j++) {
-            next_pos = add_pos(next_pos, dir);
-            char tmp = map.data[next_pos.y * width + next_pos.x];
-            map.data[next_pos.y * width + next_pos.x] = next_tile;
-            next_tile = tmp;
-        }
-
-        map.data[robot.y * width + robot.x] = '.';
+        pos_array_free(&boxes_old);
     }
 
     int gps = 0;
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            char tile = map.data[y * width + x];
-            if (tile == 'O') {
-                gps += 100 * y + x;
-            }
-        }
+    for (int i = 0; i < boxes.size; i++) {
+        gps += 100 * boxes.data[i].y + boxes.data[i].x;
     }
 
-    // print_map(&map, robot, width, height);
+    // print_map(&map, &boxes, robot, width, height);
 
     printf("Result: %d\n", gps);
 
